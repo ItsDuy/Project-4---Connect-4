@@ -5,6 +5,7 @@ from typing import Tuple, Optional
 import pygame
 
 from SoundManager import SoundManager
+import AIConnectFour1 as AICF
 import ConnectFour as CF
 from ConnectFour import ConnectFour as C4
 
@@ -229,8 +230,12 @@ class MainMenu:
 				pass
 			CF.game_loop()
 		elif self.btn_ai.is_clicked(mouse_pos, mouse_down):
-			self.toast_text = "AI mode coming soon"
-			self.toast_until = pygame.time.get_ticks() + 1500
+			# Stop menu BGM and start AI game loop
+			try:
+				self.sound.cleanup()
+			except Exception:
+				pass
+			AICF.game_loop_ai(depth=5)
 		elif self.btn_music.is_clicked(mouse_pos, mouse_down):
 			MusicSettingsScreen(self.screen, self.sound).run()
 

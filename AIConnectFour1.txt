@@ -1,0 +1,50 @@
+AI Strategy Overview for AIConnectFour1.py
+
+1) High-level method
+- The AI uses a Minimax search with alpha–beta pruning to evaluate future moves up to a fixed depth (default depth = 5).
+- Before running the full search, it performs two fast tactical checks:
+  a) One-move win: If the AI can win immediately by dropping a piece in some column, play it.
+  b) One-move block: If the opponent can win on their next turn, block that column.
+- If neither applies, it runs Minimax with alpha–beta pruning and a heuristic evaluation to pick the best column.
+
+2) Move ordering (for better pruning)
+- Valid columns are ordered by closeness to the center column. Center columns are tried first.
+- This improves alpha–beta pruning efficiency and generally leads to stronger play.
+
+3) Terminal conditions
+- A position is terminal if either player has a 4-in-a-row or the board is full (draw).
+- At terminal states, the score is a large positive value if the AI has won, a large negative value if the opponent has won, or 0 for a draw.
+
+4) Heuristic evaluation (score_position)
+- The board is scored by summing small “windows” of 4 cells in all directions (horizontal, vertical, and both diagonals). Each window is evaluated as follows (piece = AI piece, opp_piece = opponent):
+  • Four AI pieces: +100000 (immediate win pattern)
+  • Three AI + 1 empty: +100 (strong threat)
+  • Two AI + 2 empty: +12 (mildly good)
+  • Three opponent + 1 empty: −120 (urgent to block)
+  • Two opponent + 2 empty: −10 (mildly bad)
+- Center control bonus: Every AI piece in the center column adds +6 to the score.
+- Net score = Sum over all windows and the center bonus. Higher is better for the AI.
+
+5) Minimax with alpha–beta pruning
+- Minimax explores moves alternately for the AI (maximizing) and the opponent (minimizing), reducing the search when alpha ≥ beta.
+- Returns: (best_score, best_column) from the current position.
+- Initial alpha = −1e9, beta = +1e9. Large positive/negative scores represent wins/losses.
+
+6) Depth and responsiveness
+- Default search depth is 5, which balances playing strength and responsiveness.
+- Because move ordering prefers center columns, pruning is typically effective, keeping the AI responsive.
+
+7) Summary of the playstyle
+- Immediate tactics first (win if possible, otherwise block opponent’s win).
+- Otherwise, play for:
+  • Center control
+  • Building 3-in-a-row threats
+  • Avoiding giving the opponent easy 3-in-a-row threats
+- The result is a solid, classical Connect Four AI that plays reasonably strong for fixed depth.
+
+8) Possible improvements
+- Iterative deepening with a time limit (keeps UI responsive while deepening when possible)
+- Transposition table (memoize repeated positions)
+- Improved evaluation (threat-space analysis, weighted rows by height, advanced patterns)
+- Quiescence search (extend search in tactical positions)
+- Parallel search (evaluate different first moves concurrently)
