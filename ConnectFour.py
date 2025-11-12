@@ -19,8 +19,8 @@ class ConnectFour:
     bg_color = (25, 25, 30)
     board_color = (0, 102, 204)
     hole_color = (10, 10, 15)
-    player1_color = (255, 66, 66)  # red
-    player2_color = (255, 221, 87)  # yellow
+    player1_color = (255, 66, 66)       # red
+    player2_color = (255, 221, 87)      # yellow
     highlight_color = (55, 200, 120)
     text_color = (240, 240, 240)
 
@@ -131,6 +131,17 @@ def render_text(screen: pygame.Surface, text: str, color: Tuple[int, int, int], 
     screen.blit(surf, rect)
 
 
+def draw_button(screen: pygame.Surface, text: str, rect: Rect, mouse_pos: Tuple[int, int]) -> Rect:
+    """Draw a button and return its rect. Returns the same rect for convenience."""
+    is_hover = rect.collidepoint(mouse_pos)
+    bg_color = ConnectFour.highlight_color if is_hover else (60, 60, 70)
+    pygame.draw.rect(screen, bg_color, rect, border_radius=8)
+    font = pygame.font.SysFont(None, 32)
+    label = font.render(text, True, ConnectFour.text_color)
+    screen.blit(label, label.get_rect(center=rect.center))
+    return rect
+
+
 def get_col_from_mouse(x: int) -> int:
     return min(max(x // ConnectFour.cell_size, 0), ConnectFour.cols - 1)
 
@@ -150,7 +161,16 @@ def game_loop() -> None:
     game_over = False
     winner: Optional[int] = None
 
+    # Back to menu button
+    button_width, button_height = 150, 40
+    button_x = ConnectFour.width - button_width - 10
+    button_y = 10
+    menu_button_rect = Rect(button_x, button_y, button_width, button_height)
+
     while True:
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_down = False
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 try:
@@ -158,36 +178,51 @@ def game_loop() -> None:
                 finally:
                     pygame.quit()
                     sys.exit(0)
-            if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                col = get_col_from_mouse(event.pos[0])
-                row = get_next_open_row(board, col)
-                if row is not None:
-                    drop_piece(board, row, col, turn)
-                    # Play move sound for every valid move
-                    sound.play_sfx()
-                    if winning_move(board, turn):
-                        game_over = True
-                        winner = turn
-                    elif is_draw(board):
-                        game_over = True
-                        winner = None
-                    else:
-                        turn = ConnectFour.player2 if turn == ConnectFour.player1 else ConnectFour.player1
-            if event.type == pygame.KEYDOWN and game_over:
-                if event.key == pygame.K_r:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_down = True
+                # Check if menu button was clicked
+                if menu_button_rect.collidepoint(event.pos):
+                    sound.cleanup()
+                    # Clear screen before returning to avoid game screen showing through
+                    screen.fill(ConnectFour.bg_color)
+                    pygame.display.flip()
+                    return  # Return to main menu
+                # Handle game move (only if not clicking button and game not over)
+                if not game_over:
+                    col = get_col_from_mouse(event.pos[0])
+                    row = get_next_open_row(board, col)
+                    if row is not None:
+                        drop_piece(board, row, col, turn)
+                        # Play move sound for every valid move
+                        sound.play_sfx()
+                        if winning_move(board, turn):
+                            game_over = True
+                            winner = turn
+                        elif is_draw(board):
+                            game_over = True
+                            winner = None
+                        else:
+                            turn = ConnectFour.player2 if turn == ConnectFour.player1 else ConnectFour.player1
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                    # Return to main menu
+                    sound.cleanup()
+                    # Clear screen before returning to avoid game screen showing through
+                    screen.fill(ConnectFour.bg_color)
+                    pygame.display.flip()
+                    return
+                if game_over and event.key == pygame.K_r:
                     # Restart
                     board = create_board()
                     game_over = False
                     winner = None
                     turn = ConnectFour.player1
-                elif event.key in (pygame.K_ESCAPE, pygame.K_q):
-                    try:
-                        sound.cleanup()
-                    finally:
-                        pygame.quit()
-                        sys.exit(0)
 
         draw_board(screen, board)
+        
+        # Draw back to menu button
+        draw_button(screen, "Back to Menu", menu_button_rect, mouse_pos)
+        
         if game_over:
             if winner is None:
                 render_text(screen, "Draw! Press R to restart", ConnectFour.text_color, ConnectFour.cell_size // 2)
