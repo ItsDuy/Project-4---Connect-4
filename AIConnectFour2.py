@@ -12,7 +12,7 @@ from SoundManager import SoundManager
 Board = List[List[int]]
 
 
-# ---- AI evaluation helpers ----
+# ---- AI evaluation helpers (Different strategy: More aggressive) ----
 def get_valid_locations(board: Board) -> List[int]:
 	return [c for c in range(C4.cols) if board[0][c] == C4.empty_cell]
 
@@ -22,6 +22,7 @@ def is_terminal_node(board: Board) -> bool:
 
 
 def evaluate_window(window: List[int], piece: int) -> int:
+	"""More aggressive evaluation - prioritizes offense over defense"""
 	opp_piece = C4.player1 if piece == C4.player2 else C4.player2
 	score = 0
 
@@ -29,30 +30,40 @@ def evaluate_window(window: List[int], piece: int) -> int:
 	count_opp = window.count(opp_piece)
 	count_empty = window.count(C4.empty_cell)
 
-	# Winning/forcing patterns
+	# Winning/forcing patterns (more aggressive scoring)
 	if count_piece == 4:
 		score += 100000
 	elif count_piece == 3 and count_empty == 1:
-		score += 100
+		score += 150  # Higher than AI1 (was 100)
 	elif count_piece == 2 and count_empty == 2:
-		score += 12
+		score += 20   # Higher than AI1 (was 12)
+	elif count_piece == 1 and count_empty == 3:
+		score += 3    # Bonus for potential threats
 
-	# Defensive urgency: block opponent 3
+	# Defensive (less urgent than AI1)
 	if count_opp == 3 and count_empty == 1:
-		score -= 120
+		score -= 100  # Less urgent than AI1 (was -120)
 	elif count_opp == 2 and count_empty == 2:
-		score -= 10
+		score -= 8    # Less urgent than AI1 (was -10)
 
 	return score
 
 
 def score_position(board: Board, piece: int) -> int:
+	"""More aggressive position scoring"""
 	score = 0
 
-	# Center column priority
+	# Center column priority (stronger than AI1)
 	center_col = C4.cols // 2
 	center_array = [board[r][center_col] for r in range(C4.rows)]
-	score += center_array.count(piece) * 6
+	score += center_array.count(piece) * 10  # Higher than AI1 (was 6)
+
+	# Also favor columns adjacent to center
+	for offset in [1, -1]:
+		adj_col = center_col + offset
+		if 0 <= adj_col < C4.cols:
+			adj_array = [board[r][adj_col] for r in range(C4.rows)]
+			score += adj_array.count(piece) * 4
 
 	# Horizontal
 	for r in range(C4.rows):
@@ -88,9 +99,13 @@ def copy_board(board: Board) -> Board:
 
 
 def order_moves_by_heuristic(valid_cols: List[int]) -> List[int]:
-	# Prefer center columns to improve pruning and strategy
+	"""Different move ordering: prefer center but also consider edge columns"""
 	center = C4.cols // 2
-	return sorted(valid_cols, key=lambda c: abs(c - center))
+	# Prefer center, then adjacent, then edges
+	return sorted(valid_cols, key=lambda c: (
+		abs(c - center),  # Distance from center
+		abs(c - center) > 2  # Prefer center region
+	))
 
 
 def simulate_drop(board: Board, col: int, piece: int) -> Optional[Board]:
@@ -153,8 +168,8 @@ def minimax(board: Board, depth: int, alpha: int, beta: int, maximizing: bool, a
 		return value, best_col
 
 
-def ai_choose_column(board: Board, ai_piece: int, depth: int = 5) -> int:
-	# If first move or easy pick, try quick wins/blocks before full search
+def ai_choose_column(board: Board, ai_piece: int, depth: int = 6) -> int:
+	"""AI2: More aggressive, deeper search (default depth 6 vs AI1's 5)"""
 	valid_cols = get_valid_locations(board)
 	random.shuffle(valid_cols)
 
@@ -171,7 +186,7 @@ def ai_choose_column(board: Board, ai_piece: int, depth: int = 5) -> int:
 		if child is not None and CF.winning_move(child, opp):
 			return col
 
-	# 3) Search deeper with alpha-beta
+	# 3) Search deeper with alpha-beta (deeper than AI1)
 	_, best_col = minimax(board, depth, -10**9, 10**9, True, ai_piece)
 	if best_col is None:
 		# Fallback to center preference
@@ -180,10 +195,13 @@ def ai_choose_column(board: Board, ai_piece: int, depth: int = 5) -> int:
 	return best_col
 
 
-# ---- Game loop (Human vs AI) ----
-def game_loop_ai(depth: int = 5) -> None:
+# ---- AI vs AI Game loop ----
+def game_loop_ai_vs_ai(ai1_depth: int = 5, ai2_depth: int = 6, delay_ms: int = 500) -> None:
+	"""Watch two AIs compete against each other"""
+	import AIConnectFour1 as AI1
+	
 	pygame.init()
-	pygame.display.set_caption("Connect Four - vs AI")
+	pygame.display.set_caption("Connect Four - AI vs AI")
 	screen = pygame.display.set_mode((C4.width, C4.height))
 	clock = pygame.time.Clock()
 
@@ -192,9 +210,10 @@ def game_loop_ai(depth: int = 5) -> None:
 
 	board = CF.create_board()
 
-	# Randomize who starts
-	human_piece, ai_piece = (C4.player1, C4.player2) if random.choice([True, False]) else (C4.player2, C4.player1)
-	turn = human_piece if random.choice([True, False]) else ai_piece
+	# AI1 uses player1, AI2 uses player2
+	ai1_piece = C4.player1
+	ai2_piece = C4.player2
+	turn = ai1_piece  # AI1 starts
 
 	game_over = False
 	winner: Optional[int] = None
@@ -205,9 +224,13 @@ def game_loop_ai(depth: int = 5) -> None:
 	button_y = 10
 	menu_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
 
+	# Timer for AI moves (to make it watchable)
+	last_move_time = 0
+
 	while True:
 		mouse_pos = pygame.mouse.get_pos()
-		
+		current_time = pygame.time.get_ticks()
+
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				try:
@@ -217,90 +240,72 @@ def game_loop_ai(depth: int = 5) -> None:
 					sys.exit(0)
 			if event.type == pygame.KEYDOWN:
 				if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
-					# Return to main menu
 					sound.cleanup()
-					# Clear screen before returning to avoid game screen showing through
 					screen.fill(C4.bg_color)
 					pygame.display.flip()
 					return
 				if game_over and event.key == pygame.K_r:
-					# Restart and re-randomize
+					# Restart
 					board = CF.create_board()
-					human_piece, ai_piece = (C4.player1, C4.player2) if random.choice([True, False]) else (C4.player2, C4.player1)
-					turn = human_piece if random.choice([True, False]) else ai_piece
+					turn = ai1_piece
 					game_over = False
 					winner = None
-
-			# Human move
+					last_move_time = current_time
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				# Check if menu button was clicked
 				if menu_button_rect.collidepoint(event.pos):
 					sound.cleanup()
-					# Clear screen before returning to avoid game screen showing through
 					screen.fill(C4.bg_color)
 					pygame.display.flip()
-					return  # Return to main menu
-				# Handle game move (only if not clicking button and game not over and human's turn)
-				if not game_over and turn == human_piece:
-					col = CF.get_col_from_mouse(event.pos[0])
-					row = CF.get_next_open_row(board, col)
-					if row is not None:
-						CF.drop_piece(board, row, col, human_piece)
-						sound.play_sfx()
-						if CF.winning_move(board, human_piece):
-							game_over = True
-							winner = human_piece
-						elif CF.is_draw(board):
-							game_over = True
-							winner = None
-						else:
-							turn = ai_piece
+					return
 
-		# AI move (outside event loop to allow thinking without extra click)
-		if not game_over and turn == ai_piece:
-			# Optional: brief pump to keep window responsive
+		# AI moves (with delay to make it watchable)
+		if not game_over and current_time - last_move_time >= delay_ms:
 			pygame.event.pump()
-			col = ai_choose_column(board, ai_piece, depth=depth)
+			
+			if turn == ai1_piece:
+				col = AI1.ai_choose_column(board, ai1_piece, depth=ai1_depth)
+				ai_name = "AI1"
+			else:
+				col = ai_choose_column(board, ai2_piece, depth=ai2_depth)
+				ai_name = "AI2"
+			
 			row = CF.get_next_open_row(board, col)
 			if row is not None:
-				CF.drop_piece(board, row, col, ai_piece)
+				CF.drop_piece(board, row, col, turn)
 				sound.play_sfx()
-				if CF.winning_move(board, ai_piece):
+				last_move_time = current_time
+				
+				if CF.winning_move(board, turn):
 					game_over = True
-					winner = ai_piece
+					winner = turn
 				elif CF.is_draw(board):
 					game_over = True
 					winner = None
 				else:
-					turn = human_piece
+					turn = ai2_piece if turn == ai1_piece else ai1_piece
 
 		# Draw
 		CF.draw_board(screen, board)
-		
-		# Draw back to menu button
 		CF.draw_button(screen, "Back to Menu", menu_button_rect, mouse_pos)
-		
+
 		if game_over:
 			if winner is None:
 				CF.render_text(screen, "Draw! Press R to restart", C4.text_color, C4.cell_size // 2)
 			else:
 				color = C4.player1_color if winner == C4.player1 else C4.player2_color
-				label = "AI wins!" if winner == ai_piece else "You win!"
-				CF.render_text(screen, f"{label} Press R", color, C4.cell_size // 2)
+				winner_name = "AI1" if winner == ai1_piece else "AI2"
+				CF.render_text(screen, f"{winner_name} wins! Press R", color, C4.cell_size // 2)
 		else:
-			if turn == human_piece:
-				color = C4.player1_color if human_piece == C4.player1 else C4.player2_color
-				CF.render_text(screen, "Your turn", color, C4.cell_size // 2)
-			else:
-				color = C4.player1_color if ai_piece == C4.player1 else C4.player2_color
-				CF.render_text(screen, "AI thinking...", color, C4.cell_size // 2)
+			current_ai = "AI1" if turn == ai1_piece else "AI2"
+			color = C4.player1_color if turn == C4.player1 else C4.player2_color
+			CF.render_text(screen, f"{current_ai} thinking...", color, C4.cell_size // 2)
 
 		pygame.display.flip()
 		clock.tick(C4.fps)
 
 
 def main() -> None:
-	game_loop_ai(depth=5)
+	game_loop_ai_vs_ai(ai1_depth=5, ai2_depth=6, delay_ms=500)
 
 
 if __name__ == "__main__":

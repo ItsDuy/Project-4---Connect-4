@@ -6,6 +6,7 @@ import pygame
 
 from SoundManager import SoundManager
 import AIConnectFour1 as AICF
+import AIConnectFour2 as AI2CF
 import ConnectFour as CF
 from ConnectFour import ConnectFour as C4
 
@@ -182,8 +183,16 @@ class MainMenu:
 			self.button_bg,
 			self.button_hover,
 		)
-		self.btn_music = Button(
+		self.btn_ai_vs_ai = Button(
 			pygame.Rect(bx, base_y + 2 * (bh + gap), bw, bh),
+			"AI vs AI",
+			self.button_font,
+			self.button_fg,
+			self.button_bg,
+			self.button_hover,
+		)
+		self.btn_music = Button(
+			pygame.Rect(bx, base_y + 3 * (bh + gap), bw, bh),
 			"Music Settings",
 			self.button_font,
 			self.button_fg,
@@ -218,17 +227,23 @@ class MainMenu:
 		mouse_pos = pygame.mouse.get_pos()
 		self.btn_pvp.draw(self.screen, mouse_pos)
 		self.btn_ai.draw(self.screen, mouse_pos)
+		self.btn_ai_vs_ai.draw(self.screen, mouse_pos)
 		self.btn_music.draw(self.screen, mouse_pos)
 
 	def _handle_clicks(self, mouse_down: bool) -> None:
 		mouse_pos = pygame.mouse.get_pos()
 		if self.btn_pvp.is_clicked(mouse_pos, mouse_down):
-			# Stop menu BGM and jump to game loop (exits process when user quits)
+			# Stop menu BGM and jump to game loop
 			try:
 				self.sound.cleanup()
 			except Exception:
 				pass
 			CF.game_loop()
+			# Restart menu BGM when returning from game
+			try:
+				self.sound.play_bgm()
+			except Exception:
+				pass
 		elif self.btn_ai.is_clicked(mouse_pos, mouse_down):
 			# Stop menu BGM and start AI game loop
 			try:
@@ -236,6 +251,23 @@ class MainMenu:
 			except Exception:
 				pass
 			AICF.game_loop_ai(depth=5)
+			# Restart menu BGM when returning from game
+			try:
+				self.sound.play_bgm()
+			except Exception:
+				pass
+		elif self.btn_ai_vs_ai.is_clicked(mouse_pos, mouse_down):
+			# Stop menu BGM and start AI vs AI game loop
+			try:
+				self.sound.cleanup()
+			except Exception:
+				pass
+			AI2CF.game_loop_ai_vs_ai(ai1_depth=5, ai2_depth=6, delay_ms=500)
+			# Restart menu BGM when returning from game
+			try:
+				self.sound.play_bgm()
+			except Exception:
+				pass
 		elif self.btn_music.is_clicked(mouse_pos, mouse_down):
 			MusicSettingsScreen(self.screen, self.sound).run()
 
