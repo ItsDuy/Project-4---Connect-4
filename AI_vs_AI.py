@@ -85,9 +85,25 @@ def game_loop_ai_vs_ai(ai1_depth: int = 6, ai2_depth: int = 6, delay_ms: int = 5
 			
 			row = CF.get_next_open_row(board, col)
 			if row is not None:
-				CF.drop_piece(board, row, col, turn)
-				sound.play_sfx()
-				last_move_time = current_time
+				# Animate the falling piece for the current AI
+				def _extra_draw_ai(surf: pygame.Surface) -> None:
+					CF.draw_button(surf, "Back to Menu", menu_button_rect, pygame.mouse.get_pos())
+				status_color = C4.player1_color if turn == C4.player1 else C4.player2_color
+				ai_label = "AI1 moving..." if turn == ai1_piece else "AI2 moving..."
+				CF.animate_falling_piece(
+					screen,
+					board,
+					col,
+					row,
+					turn,
+					clock,
+					sfx=sound,
+					extra_draw=_extra_draw_ai,
+					status_text=(ai_label, status_color),
+					speed_px_per_frame=30,
+					easing="ease_out",
+				)
+				last_move_time = pygame.time.get_ticks()
 				
 				if CF.winning_move(board, turn):
 					game_over = True
