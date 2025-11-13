@@ -1,12 +1,8 @@
 from __future__ import annotations
 import sys
 import os
-<<<<<<< HEAD
 from typing import Optional
 
-=======
-from typing import Tuple, Optional
->>>>>>> origin/main
 import pygame
 
 from SoundManager import SoundManager
