@@ -14,7 +14,7 @@ from AIStrategy2 import ai_choose_column as ai2_choose_column
 
 
 # ---- AI vs AI Game loop ----
-def game_loop_ai_vs_ai(ai1_depth: int = 5, ai2_depth: int = 6, delay_ms: int = 500) -> None:
+def game_loop_ai_vs_ai(ai1_depth: int = 6, ai2_depth: int = 6, delay_ms: int = 500) -> None:
 	"""Watch two AIs compete against each other"""
 	pygame.init()
 	pygame.display.set_caption("Connect Four - AI vs AI")

@@ -361,7 +361,7 @@ class MainMenu:
 				self.sound.cleanup()
 			except Exception:
 				pass
-			AIAI.game_loop_ai_vs_ai(ai1_depth=5, ai2_depth=6, delay_ms=500)
+			AIAI.game_loop_ai_vs_ai(ai1_depth=6, ai2_depth=6, delay_ms=500)
 			# Restart menu BGM when returning from game
 			try:
 				self.sound.play_bgm()
