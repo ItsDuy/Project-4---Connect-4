@@ -33,6 +33,9 @@ def game_loop_ai(depth: int = 6, is_normal: bool = False) -> None:
 	game_over = False
 	winner: Optional[int] = None
 
+	# Add a small handoff delay after human move so the landing frame renders
+	ai_ready_time: Optional[int] = None
+
 	# Back to menu button
 	button_width, button_height = 150, 40
 	button_x = C4.width - button_width - 10
@@ -73,8 +76,23 @@ def game_loop_ai(depth: int = 6, is_normal: bool = False) -> None:
 					col = CF.get_col_from_mouse(event.pos[0])
 					row = CF.get_next_open_row(board, col)
 					if row is not None:
-						CF.drop_piece(board, row, col, human_piece)
-						sound.play_sfx()
+						# Animate the falling piece; piece is applied at the end of the animation
+						def _extra_draw(surf: pygame.Surface) -> None:
+							CF.draw_button(surf, "Back to Menu", menu_button_rect, pygame.mouse.get_pos())
+						status_color = C4.player1_color if human_piece == C4.player1 else C4.player2_color
+						CF.animate_falling_piece(
+							screen,
+							board,
+							col,
+							row,
+							human_piece,
+							clock,
+							sfx=sound,
+							extra_draw=_extra_draw,
+							status_text=("Your move", status_color),
+							speed_px_per_frame=30,
+							easing="ease_out",
+						)
 						if CF.winning_move(board, human_piece):
 							game_over = True
 							winner = human_piece
@@ -83,9 +101,13 @@ def game_loop_ai(depth: int = 6, is_normal: bool = False) -> None:
 							winner = None
 						else:
 							turn = ai_piece
+							# Set a short delay before AI starts thinking to ensure smooth landing frame
+							ai_ready_time = pygame.time.get_ticks() + 80
 
 		# AI move
-		if not game_over and turn == ai_piece:
+		if not game_over and turn == ai_piece and (ai_ready_time is None or pygame.time.get_ticks() >= ai_ready_time):
+			# Clear the readiness once we begin the AI move computation
+			ai_ready_time = None
 			pygame.event.pump()
 			
 			if is_normal and random.random() < 0.25:
@@ -99,8 +121,23 @@ def game_loop_ai(depth: int = 6, is_normal: bool = False) -> None:
 			
 			row = CF.get_next_open_row(board, col)
 			if row is not None:
-				CF.drop_piece(board, row, col, ai_piece)
-				sound.play_sfx()
+				# Animate AI falling piece
+				def _extra_draw_ai(surf: pygame.Surface) -> None:
+					CF.draw_button(surf, "Back to Menu", menu_button_rect, pygame.mouse.get_pos())
+				status_color = C4.player1_color if ai_piece == C4.player1 else C4.player2_color
+				CF.animate_falling_piece(
+					screen,
+					board,
+					col,
+					row,
+					ai_piece,
+					clock,
+					sfx=sound,
+					extra_draw=_extra_draw_ai,
+					status_text=("AI moving...", status_color),
+					speed_px_per_frame=30,
+					easing="ease_out",
+				)
 				if CF.winning_move(board, ai_piece):
 					game_over = True
 					winner = ai_piece
