@@ -48,7 +48,6 @@ class SoundManager:
         for p in candidates:
             if os.path.isfile(p):
                 return p
-        # Return first candidate even if it doesn't exist, we'll warn later.
         return candidates[0]
 
     def init(self) -> None:
@@ -85,7 +84,6 @@ class SoundManager:
         if not self._mixer_ready:
             self.init()
         try:
-            # If already playing, don't restart
             if pygame.mixer.music.get_busy():
                 return
             pygame.mixer.music.set_volume(self._percent_to_norm(self.bgm_volume))
@@ -140,6 +138,8 @@ class SoundManager:
                 pygame.mixer.quit()
         except Exception:
             pass
+
+        self._mixer_ready = False
 
     @staticmethod
     def _percent_to_norm(p: float) -> float:
