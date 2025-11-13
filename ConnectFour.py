@@ -289,7 +289,20 @@ def game_loop(net: 'Network', my_player: int) -> None:
                 opp_piece = ConnectFour.player1 if my_player == ConnectFour.player2 else ConnectFour.player2
                 row = get_next_open_row(board, col)
                 if row is not None:
-                    drop_piece(board, row, col, opp_piece)
+                    def _extra_draw(surf: pygame.Surface) -> None:
+                        draw_button(surf, "Back to Menu", menu_button_rect, pygame.mouse.get_pos())
+
+                    animate_falling_piece(
+                            screen,
+                            board,
+                            col,
+                            row,
+                            opp_piece,
+                            clock,
+                            sfx=sound,
+                            extra_draw=_extra_draw,
+                            status_text=None,
+                        )
                     sound.play_sfx()
                     if winning_move(board, opp_piece):
                         game_over = True
@@ -322,18 +335,6 @@ def game_loop(net: 'Network', my_player: int) -> None:
                     net.close()
                     pygame.quit()
                     sys.exit(0)
-            if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                col = get_col_from_mouse(event.pos[0])
-                if turn == my_player:
-                    row = get_next_open_row(board, col)
-                    if row is not None:
-                        drop_piece(board, row, col, my_player)
-                        # Play move sound for every valid move
-                        sound.play_sfx()
-                        send_move(col)
-                        if winning_move(board, my_player):
-                            game_over = True
-                            winner = my_player
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_down = True
                 # Check if menu button was clicked
@@ -344,7 +345,7 @@ def game_loop(net: 'Network', my_player: int) -> None:
                     pygame.display.flip()
                     return  # Return to main menu
                 # Handle game move (only if not clicking button and game not over)
-                if not game_over:
+                if not game_over and turn == my_player:
                     col = get_col_from_mouse(event.pos[0])
                     row = get_next_open_row(board, col)
                     if row is not None:
@@ -354,28 +355,30 @@ def game_loop(net: 'Network', my_player: int) -> None:
                             draw_button(surf, "Back to Menu", menu_button_rect, pygame.mouse.get_pos())
 
                         status = (
-                            (f"Turn: Player {turn}", ConnectFour.player1_color if turn == ConnectFour.player1 else ConnectFour.player2_color)
+                            (f"Your turn", ConnectFour.player1_color if turn == ConnectFour.player1 else ConnectFour.player2_color)
                         )
                         animate_falling_piece(
                             screen,
                             board,
                             col,
                             row,
-                            turn,
+                            my_player,
                             clock,
                             sfx=sound,
                             extra_draw=_extra_draw,
                             status_text=status,
                         )
 
+                        send_move(col)
+
                         if winning_move(board, turn):
                             game_over = True
-                            winner = turn
+                            winner = my_player
                         elif is_draw(board):
                             game_over = True
                             winner = None
                         else:
-                            turn = ConnectFour.player2 if turn == ConnectFour.player1 else ConnectFour.player1
+                            turn = ConnectFour.player2 if my_player == ConnectFour.player1 else ConnectFour.player1
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
                     # Return to main menu
