@@ -1,24 +1,12 @@
-import sys
+"""
+AI Strategy 2: More aggressive offense-focused strategy
+"""
 import random
 from typing import List, Optional, Tuple
 
-import pygame
-
 import ConnectFour as CF
 from ConnectFour import ConnectFour as C4
-from SoundManager import SoundManager
-
-
-Board = List[List[int]]
-
-
-# ---- AI evaluation helpers (Different strategy: More aggressive) ----
-def get_valid_locations(board: Board) -> List[int]:
-	return [c for c in range(C4.cols) if board[0][c] == C4.empty_cell]
-
-
-def is_terminal_node(board: Board) -> bool:
-	return CF.winning_move(board, C4.player1) or CF.winning_move(board, C4.player2) or CF.is_draw(board)
+from AICore import Board, get_valid_locations, is_terminal_node, copy_board, simulate_drop, order_moves_by_heuristic
 
 
 def evaluate_window(window: List[int], piece: int) -> int:
@@ -94,11 +82,7 @@ def score_position(board: Board, piece: int) -> int:
 	return score
 
 
-def copy_board(board: Board) -> Board:
-	return [row[:] for row in board]
-
-
-def order_moves_by_heuristic(valid_cols: List[int]) -> List[int]:
+def order_moves_by_heuristic_custom(valid_cols: List[int]) -> List[int]:
 	"""Different move ordering: prefer center but also consider edge columns"""
 	center = C4.cols // 2
 	# Prefer center, then adjacent, then edges
@@ -108,16 +92,8 @@ def order_moves_by_heuristic(valid_cols: List[int]) -> List[int]:
 	))
 
 
-def simulate_drop(board: Board, col: int, piece: int) -> Optional[Board]:
-	row = CF.get_next_open_row(board, col)
-	if row is None:
-		return None
-	nb = copy_board(board)
-	CF.drop_piece(nb, row, col, piece)
-	return nb
-
-
 def minimax(board: Board, depth: int, alpha: int, beta: int, maximizing: bool, ai_piece: int) -> Tuple[int, Optional[int]]:
+	"""Minimax algorithm with alpha-beta pruning"""
 	opp_piece = C4.player1 if ai_piece == C4.player2 else C4.player2
 
 	terminal = is_terminal_node(board)
@@ -140,7 +116,7 @@ def minimax(board: Board, depth: int, alpha: int, beta: int, maximizing: bool, a
 
 	if maximizing:
 		value = -10**9
-		for col in order_moves_by_heuristic(valid_cols):
+		for col in order_moves_by_heuristic_custom(valid_cols):
 			child = simulate_drop(board, col, ai_piece)
 			if child is None:
 				continue
@@ -154,7 +130,7 @@ def minimax(board: Board, depth: int, alpha: int, beta: int, maximizing: bool, a
 		return value, best_col
 	else:
 		value = 10**9
-		for col in order_moves_by_heuristic(valid_cols):
+		for col in order_moves_by_heuristic_custom(valid_cols):
 			child = simulate_drop(board, col, opp_piece)
 			if child is None:
 				continue
@@ -169,7 +145,7 @@ def minimax(board: Board, depth: int, alpha: int, beta: int, maximizing: bool, a
 
 
 def ai_choose_column(board: Board, ai_piece: int, depth: int = 6) -> int:
-	"""AI2: More aggressive, deeper search (default depth 6 vs AI1's 5)"""
+	"""AI Strategy 2: More aggressive, deeper search (default depth 6 vs AI1's 5)"""
 	valid_cols = get_valid_locations(board)
 	random.shuffle(valid_cols)
 
@@ -190,124 +166,7 @@ def ai_choose_column(board: Board, ai_piece: int, depth: int = 6) -> int:
 	_, best_col = minimax(board, depth, -10**9, 10**9, True, ai_piece)
 	if best_col is None:
 		# Fallback to center preference
-		ordered = order_moves_by_heuristic(get_valid_locations(board))
+		ordered = order_moves_by_heuristic_custom(get_valid_locations(board))
 		return ordered[0] if ordered else 0
 	return best_col
-
-
-# ---- AI vs AI Game loop ----
-def game_loop_ai_vs_ai(ai1_depth: int = 5, ai2_depth: int = 6, delay_ms: int = 500) -> None:
-	"""Watch two AIs compete against each other"""
-	import AIConnectFour1 as AI1
-	
-	pygame.init()
-	pygame.display.set_caption("Connect Four - AI vs AI")
-	screen = pygame.display.set_mode((C4.width, C4.height))
-	clock = pygame.time.Clock()
-
-	sound = SoundManager()
-	sound.play_bgm()
-
-	board = CF.create_board()
-
-	# AI1 uses player1, AI2 uses player2
-	ai1_piece = C4.player1
-	ai2_piece = C4.player2
-	turn = ai1_piece  # AI1 starts
-
-	game_over = False
-	winner: Optional[int] = None
-
-	# Back to menu button
-	button_width, button_height = 150, 40
-	button_x = C4.width - button_width - 10
-	button_y = 10
-	menu_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-
-	# Timer for AI moves (to make it watchable)
-	last_move_time = 0
-
-	while True:
-		mouse_pos = pygame.mouse.get_pos()
-		current_time = pygame.time.get_ticks()
-
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				try:
-					sound.cleanup()
-				finally:
-					pygame.quit()
-					sys.exit(0)
-			if event.type == pygame.KEYDOWN:
-				if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
-					sound.cleanup()
-					screen.fill(C4.bg_color)
-					pygame.display.flip()
-					return
-				if game_over and event.key == pygame.K_r:
-					# Restart
-					board = CF.create_board()
-					turn = ai1_piece
-					game_over = False
-					winner = None
-					last_move_time = current_time
-			if event.type == pygame.MOUSEBUTTONDOWN:
-				if menu_button_rect.collidepoint(event.pos):
-					sound.cleanup()
-					screen.fill(C4.bg_color)
-					pygame.display.flip()
-					return
-
-		# AI moves (with delay to make it watchable)
-		if not game_over and current_time - last_move_time >= delay_ms:
-			pygame.event.pump()
-			
-			if turn == ai1_piece:
-				col = AI1.ai_choose_column(board, ai1_piece, depth=ai1_depth)
-				ai_name = "AI1"
-			else:
-				col = ai_choose_column(board, ai2_piece, depth=ai2_depth)
-				ai_name = "AI2"
-			
-			row = CF.get_next_open_row(board, col)
-			if row is not None:
-				CF.drop_piece(board, row, col, turn)
-				sound.play_sfx()
-				last_move_time = current_time
-				
-				if CF.winning_move(board, turn):
-					game_over = True
-					winner = turn
-				elif CF.is_draw(board):
-					game_over = True
-					winner = None
-				else:
-					turn = ai2_piece if turn == ai1_piece else ai1_piece
-
-		# Draw
-		CF.draw_board(screen, board)
-		CF.draw_button(screen, "Back to Menu", menu_button_rect, mouse_pos)
-
-		if game_over:
-			if winner is None:
-				CF.render_text(screen, "Draw! Press R to restart", C4.text_color, C4.cell_size // 2)
-			else:
-				color = C4.player1_color if winner == C4.player1 else C4.player2_color
-				winner_name = "AI1" if winner == ai1_piece else "AI2"
-				CF.render_text(screen, f"{winner_name} wins! Press R", color, C4.cell_size // 2)
-		else:
-			current_ai = "AI1" if turn == ai1_piece else "AI2"
-			color = C4.player1_color if turn == C4.player1 else C4.player2_color
-			CF.render_text(screen, f"{current_ai} thinking...", color, C4.cell_size // 2)
-
-		pygame.display.flip()
-		clock.tick(C4.fps)
-
-
-def main() -> None:
-	game_loop_ai_vs_ai(ai1_depth=5, ai2_depth=6, delay_ms=500)
-
-
-if __name__ == "__main__":
-	main()
 

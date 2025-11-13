@@ -1,12 +1,12 @@
+from __future__ import annotations
 import sys
 import os
 from typing import Tuple, Optional
-
 import pygame
 
 from SoundManager import SoundManager
-import AIConnectFour1 as AICF
-import AIConnectFour2 as AI2CF
+import Human_vs_AI as HUAI
+import AI_vs_AI as AIAI
 import ConnectFour as CF
 from ConnectFour import ConnectFour as C4
 
@@ -37,6 +37,100 @@ class Button:
 
 	def is_clicked(self, mouse_pos: Tuple[int, int], mouse_down: bool) -> bool:
 		return mouse_down and self.rect.collidepoint(mouse_pos)
+
+
+class DifficultySelectionScreen:
+	def __init__(self, screen: pygame.Surface, sound: SoundManager, main_menu: MainMenu) -> None:
+		self.screen = screen
+		self.sound = sound
+		self.width, self.height = self.screen.get_size()
+		self.title_font = pygame.font.SysFont(None, 72)
+		self.button_font = pygame.font.SysFont(None, 48)
+		
+		self.main_menu = main_menu
+		# Buttons layout
+		bw, bh = int(self.width * 0.5), 70
+		bx = (self.width - bw) // 2
+		base_y = C4.cell_size * 2
+		gap = 20
+
+		self.btn_easy = Button(
+			pygame.Rect(bx, base_y, bw, bh),
+			"Easy",
+			self.button_font,
+			(20, 20, 25),
+			(230, 230, 240),
+			(200, 220, 240),
+		)
+		self.btn_normal = Button(
+			pygame.Rect(bx, base_y + (bh + gap), bw, bh),
+			"Normal",
+			self.button_font,
+			(20, 20, 25),
+			(230, 230, 240),
+			(200, 220, 240),
+		)
+		self.btn_hard = Button(
+			pygame.Rect(bx, base_y + 2 * (bh + gap), bw, bh),
+			"Hard",
+			self.button_font,
+			(20, 20, 25),
+			(230, 230, 240),
+			(200, 220, 240),
+		)
+
+	def run(self) -> Optional[int]:
+		"""Returns selected depth (1, 3, or 6), or None if cancelled"""
+		clock = pygame.time.Clock()
+		running = True
+		selected_depth = None
+
+		while running:
+			mouse_pos = pygame.mouse.get_pos()
+			mouse_down = False
+
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					running = False
+				elif event.type == pygame.KEYDOWN:
+					if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+						running = False
+				elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+					mouse_down = True
+
+			# Handle clicks
+			if mouse_down:
+				if self.btn_easy.is_clicked(mouse_pos, mouse_down):
+					selected_depth = 1
+					running = False
+				elif self.btn_normal.is_clicked(mouse_pos, mouse_down):
+					selected_depth = 3
+					running = False
+				elif self.btn_hard.is_clicked(mouse_pos, mouse_down):
+					selected_depth = 6
+					running = False
+
+			# Background
+			self.main_menu._draw_background()
+
+			# Title
+			title = self.title_font.render("Select Difficulty", True, C4.text_color)
+			self.screen.blit(title, title.get_rect(center=(self.width // 2, C4.cell_size // 2)))
+
+			# Buttons
+			self.btn_easy.draw(self.screen, mouse_pos)
+			self.btn_normal.draw(self.screen, mouse_pos)
+			self.btn_hard.draw(self.screen, mouse_pos)
+
+			# Footer hint
+			hint = pygame.font.SysFont(None, 28).render("Esc/Backspace: Back", True, (180, 180, 180))
+			self.screen.blit(hint, hint.get_rect(center=(self.width // 2, self.height - 30)))
+
+   
+			pygame.display.flip()
+			clock.tick(C4.fps)
+
+		return selected_depth
 
 
 class MusicSettingsScreen:
@@ -245,24 +339,29 @@ class MainMenu:
 			except Exception:
 				pass
 		elif self.btn_ai.is_clicked(mouse_pos, mouse_down):
-			# Stop menu BGM and start AI game loop
-			try:
-				self.sound.cleanup()
-			except Exception:
-				pass
-			AICF.game_loop_ai(depth=5)
-			# Restart menu BGM when returning from game
-			try:
-				self.sound.play_bgm()
-			except Exception:
-				pass
+			# Show difficulty selection screen
+			difficulty_screen = DifficultySelectionScreen(self.screen, self.sound, self)
+			selected_depth = difficulty_screen.run()
+			
+			if selected_depth is not None:
+				try:
+					self.sound.cleanup()
+				except Exception:
+					pass
+				# is_normal=True only for Normal mode (depth=3)
+				is_normal = (selected_depth == 3)
+				HUAI.game_loop_ai(depth=selected_depth, is_normal=is_normal)
+				try:
+					self.sound.play_bgm()
+				except Exception:
+					pass
 		elif self.btn_ai_vs_ai.is_clicked(mouse_pos, mouse_down):
 			# Stop menu BGM and start AI vs AI game loop
 			try:
 				self.sound.cleanup()
 			except Exception:
 				pass
-			AI2CF.game_loop_ai_vs_ai(ai1_depth=5, ai2_depth=6, delay_ms=500)
+			AIAI.game_loop_ai_vs_ai(ai1_depth=5, ai2_depth=6, delay_ms=500)
 			# Restart menu BGM when returning from game
 			try:
 				self.sound.play_bgm()
