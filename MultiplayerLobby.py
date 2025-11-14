@@ -121,6 +121,7 @@ class Lobby:
             print(f"[HOST] Room code: {self.room_code}")
         except socket.error as e:
             self.connection_message = f"Error: {e}"
+            
     def leave_game(self):
         if self.network:
             try:
@@ -160,10 +161,10 @@ class Lobby:
         self.ready = not self.ready
         try:
             if self.ready:
-                self.network.send("READY")
+                self.network.send("READY") if self.network else None
                 self.connection_message = "Ready"
             else:
-                self.network.send("CANCEL")
+                self.network.send("CANCEL") if self.network else None
                 self.connection_message = "Cancelled"
         except Exception as e:
             print("Error toggling ready:", e)
@@ -250,7 +251,6 @@ class Lobby:
                         self.leave_game()
                     elif self.other_joined and self.ready_btn.is_clicked(mouse, mouse_down):
                         self.toggle_ready()
-                
                 elif self.mode == "join":
                     if not self.other_joined:
                         self.input_active = True
@@ -270,19 +270,19 @@ class Lobby:
                             self.toggle_ready()
             
             if self.network:
-                msg: str = self.network.get_message()
+                msg: str = self.network.get_message() 
                 if msg:
                     if msg.startswith("ROLE:"):
-                        self.player_num = int(msg.split(":")[1][0])
+                        self.player_num = int(msg.split(":")[1])
                         self.connection_message = f"Role assigned: Player {self.player_num}"
+                        self.connection_message = "Starting game..."
+                        CF.game_loop(self.network, self.player_num)
+                        self.leave_game()
                     if msg == "JOINED":
                         self.other_joined = True
                         self.connection_message = "A player has joined!"
-                    elif msg == "START":
-                        player_role = self.player_num
-                        self.connection_message = "Starting game..."
-                        CF.game_loop(self.network, player_role)
-                        self.leave_game()
+                    # elif msg == "START":
+                    #     player_role = self.player_num
                     elif msg.startswith("ERR"):
                         self.connection_message = msg
                     elif msg == "LEFT":
