@@ -1,11 +1,13 @@
 import socket
 from _thread import *
+from utils import get_ip_interface
 
 class Network:
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server = "127.0.0.1"
-        self.port = 5050
+        self.server = "0.tcp.ap.ngrok.io"
+        print(f"[Network] Local IP detected as: {self.server}")
+        self.port = 11116
         self.addr = (self.server, self.port)
         self.connected = False
         self.running = False
@@ -55,7 +57,7 @@ class Network:
         except OSError as e:
             print(f"[Network] Send error: {e}")
             self.close()
-        except socket.error as e:
+        except Exception as e:
             print(f"[Network] Send error: {e}")
     
     def get_message(self):
