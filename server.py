@@ -1,8 +1,11 @@
 import socket
 import sys
 from _thread import *
-server = "0.tcp.ap.ngrok.io" # localhost address, might want to change this later
-port = 11116
+from utils import get_ip_interface
+
+# server = get_ip_interface()
+server = "0.0.0.0" 
+port = 8080
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -10,8 +13,10 @@ try:
     s.bind((server, port))
 except socket.error as e:
     print(e)
+    s.close()
+    sys.exit(1)
 
-s.listen(4)
+s.listen(10)
 print("Waiting for connection, server started.")
 
 rooms = {} # {code: [host_conn, client_conn]}
