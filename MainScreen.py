@@ -1,7 +1,8 @@
 from __future__ import annotations
 import sys
 import os
-from typing import Tuple, Optional
+from typing import Optional
+
 import pygame
 
 from SoundManager import SoundManager
@@ -9,34 +10,8 @@ import Human_vs_AI as HUAI
 import AI_vs_AI as AIAI
 import ConnectFour as CF
 from ConnectFour import ConnectFour as C4
-
-
-class Button:
-	def __init__(
-		self,
-		rect: pygame.Rect,
-		text: str,
-		font: pygame.font.Font,
-		fg: Tuple[int, int, int],
-		bg: Tuple[int, int, int],
-		hover: Tuple[int, int, int],
-	) -> None:
-		self.rect = rect
-		self.text = text
-		self.font = font
-		self.fg = fg
-		self.bg = bg
-		self.hover = hover
-
-	def draw(self, screen: pygame.Surface, mouse_pos: Tuple[int, int]) -> None:
-		is_hover = self.rect.collidepoint(mouse_pos)
-		color = self.hover if is_hover else self.bg
-		pygame.draw.rect(screen, color, self.rect, border_radius=10)
-		label = self.font.render(self.text, True, self.fg)
-		screen.blit(label, label.get_rect(center=self.rect.center))
-
-	def is_clicked(self, mouse_pos: Tuple[int, int], mouse_down: bool) -> bool:
-		return mouse_down and self.rect.collidepoint(mouse_pos)
+from MultiplayerLobby import Lobby
+from button import Button
 
 
 class DifficultySelectionScreen:
@@ -235,6 +210,8 @@ class MainMenu:
 		self.screen = pygame.display.set_mode((self.width, self.height))
 		self.clock = pygame.time.Clock()
 
+		self.lobby = Lobby(on_return=main)
+
 		# Background image (optional)
 		self.background: Optional[pygame.Surface] = None
 		bg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'bg.jpeg')
@@ -332,7 +309,7 @@ class MainMenu:
 				self.sound.cleanup()
 			except Exception:
 				pass
-			CF.game_loop()
+			self.lobby.run()
 			# Restart menu BGM when returning from game
 			try:
 				self.sound.play_bgm()
