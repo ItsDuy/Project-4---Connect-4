@@ -83,8 +83,8 @@ def threaded_client(conn, addr):
                     p1, p2, *_ = rooms[room_code]
                     p1.sendall(str.encode("ROLE:1"))
                     p2.sendall(str.encode("ROLE:2"))
-                    p1.sendall(str.encode("START"))
-                    p2.sendall(str.encode("START"))
+                    # p1.sendall(str.encode("START"))
+                    # p2.sendall(str.encode("START"))
                     print(f"[ROOM {room_code}] Game started!")
 
             elif data == "CANCEL":
