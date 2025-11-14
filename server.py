@@ -1,8 +1,8 @@
 import socket
 import sys
 from _thread import *
-server = "127.0.0.1" # localhost address, might want to change this later
-port = 5050
+server = "0.tcp.ap.ngrok.io" # localhost address, might want to change this later
+port = 11116
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
