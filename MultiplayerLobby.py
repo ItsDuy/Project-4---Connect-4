@@ -260,6 +260,8 @@ class Lobby:
                             if self.joining_code:
                                 print("[CLI] Code entered: ", self.joining_code)
                                 self.connect_to_game()
+                        elif self.cancel_btn.is_clicked(mouse, mouse_down):
+                            self.mode = ""
                     else:
                             
                         if self.leave_room_btn.is_clicked(mouse, mouse_down):
