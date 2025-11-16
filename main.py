@@ -325,9 +325,14 @@ class MainMenu:
 					self.sound.cleanup()
 				except Exception:
 					pass
-				# is_normal=True only for Normal mode (depth=3)
-				is_normal = (selected_depth == 3)
-				HUAI.game_loop_ai(depth=selected_depth, is_normal=is_normal)
+				
+				if selected_depth == 1:
+					flag = "easy"
+				elif selected_depth == 3:
+					flag = "normal"
+				else:
+					flag = "hard"
+				HUAI.game_loop_ai(depth=selected_depth, flag=flag)
 				try:
 					self.sound.play_bgm()
 				except Exception:
