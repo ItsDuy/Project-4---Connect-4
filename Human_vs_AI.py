@@ -15,7 +15,7 @@ from AICore import get_valid_locations
 
 
 # ---- Game loop (Human vs AI) ----
-def game_loop_ai(depth: int = 6, is_normal: bool = False) -> None:
+def game_loop_ai(depth: int = 6, flag: str = "easy") -> None:
 	pygame.init()
 	pygame.display.set_caption("Connect Four - vs AI")
 	screen = pygame.display.set_mode((C4.width, C4.height))
@@ -110,7 +110,14 @@ def game_loop_ai(depth: int = 6, is_normal: bool = False) -> None:
 			ai_ready_time = None
 			pygame.event.pump()
 			
-			if is_normal and random.random() < 0.25:
+			
+			if flag == "normal" and random.random() < 0.25:
+				valid_cols = get_valid_locations(board)
+				if valid_cols:
+					col = random.choice(valid_cols)
+				else:
+					col = ai_choose_column(board, ai_piece, depth=depth)
+			elif flag == "easy" and random.random() < 0.5:
 				valid_cols = get_valid_locations(board)
 				if valid_cols:
 					col = random.choice(valid_cols)

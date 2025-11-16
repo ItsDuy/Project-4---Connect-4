@@ -3,7 +3,7 @@ Game loop for AI vs AI (using AIStrategy1 and AIStrategy2)
 """
 import sys
 from typing import Optional
-
+import random
 import pygame
 
 import ConnectFour as CF
@@ -11,7 +11,7 @@ from ConnectFour import ConnectFour as C4
 from SoundManager import SoundManager
 from AIStrategy1 import ai_choose_column as ai1_choose_column
 from AIStrategy2 import ai_choose_column as ai2_choose_column
-
+from AICore import get_valid_locations
 
 # ---- AI vs AI Game loop ----
 def game_loop_ai_vs_ai(ai1_depth: int = 6, ai2_depth: int = 6, delay_ms: int = 500) -> None:
@@ -78,11 +78,34 @@ def game_loop_ai_vs_ai(ai1_depth: int = 6, ai2_depth: int = 6, delay_ms: int = 5
 		if not game_over and current_time - last_move_time >= delay_ms:
 			pygame.event.pump()
 			
+   
 			if turn == ai1_piece:
-				col = ai1_choose_column(board, ai1_piece, depth=ai1_depth)
+				if random.random() < 0.25:
+					valid_cols = get_valid_locations(board)
+					if valid_cols:
+						col = random.choice(valid_cols)
+					else:
+						col = ai1_choose_column(board, ai1_piece, depth=ai1_depth)
+				else:
+					valid_cols = get_valid_locations(board)
+					if valid_cols:
+						col = random.choice(valid_cols)
+					else:
+						col = ai1_choose_column(board, ai1_piece, depth=ai1_depth)
 			else:
-				col = ai2_choose_column(board, ai2_piece, depth=ai2_depth)
-			
+				if random.random() < 0.25:
+					valid_cols = get_valid_locations(board)
+					if valid_cols:
+						col = random.choice(valid_cols)
+					else:
+						col = ai2_choose_column(board, ai2_piece, depth=ai2_depth)
+				else:
+					valid_cols = get_valid_locations(board)
+					if valid_cols:
+						col = random.choice(valid_cols)
+					else:
+						col = ai2_choose_column(board, ai2_piece, depth=ai2_depth)
+      
 			row = CF.get_next_open_row(board, col)
 			if row is not None:
 				# Animate the falling piece for the current AI
