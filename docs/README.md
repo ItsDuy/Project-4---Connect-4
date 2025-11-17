@@ -1,8 +1,12 @@
-Members:
+## Members:
 Nguyễn Anh Duy
+
 Phạm Quang Anh Duy
+
 Nguyễn Quốc Hiệu
+
 Cao Quế Phương
+
 # Connect 4 (Python + Pygame)
 
 A simple two-player Connect Four game implemented with Python and Pygame. Click a column to drop your piece. First to connect four horizontally, vertically, or diagonally wins.
