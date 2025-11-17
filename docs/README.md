@@ -1,3 +1,8 @@
+Members:
+Nguyễn Anh Duy
+Phạm Quang Anh Duy
+Nguyễn Quốc Hiệu
+Cao Quế Phương
 # Connect 4 (Python + Pygame)
 
 A simple two-player Connect Four game implemented with Python and Pygame. Click a column to drop your piece. First to connect four horizontally, vertically, or diagonally wins.
@@ -22,24 +27,20 @@ python -m pip install -r requirements.txt
 ```
 
 ## Run
-
+'''
+Start a server:
+python .\server.py
+'''
 Start from the main menu (recommended):
 
 ```powershell
-python .\MainScreen.py
+python .\main.py ( 1  player )
 ```
+To have the second player does the same thing.
+One of the player will host room and the second one would type in the room's code to join.
+When both players are ready the game will start
 
-Start the game directly (skips menu):
 
-```powershell
-python .\ConnectFour.py
-```
-
-Run logic self-tests (no GUI):
-
-```powershell
-python .\ConnectFour.py --test
-```
 
 ## Controls
 
@@ -49,11 +50,7 @@ python .\ConnectFour.py --test
 
 ### Main Menu
 
-- Play PvP: start a two-player local match
-- Play AI: placeholder (coming soon)
+- Play PvP: start a two-player local match.
+- Play AI: Three differant modes: easy-medium-hard using mini-max pruning stratgety with orders_moves_by_heuristic (prefer middle column)
+- AI vs AI: Watch different AI modes combat each other.
 - Music Settings: adjust BGM/SFX volumes; press Esc/Backspace to go back
-
-## Notes
-
-- Window size is 700x700 pixels by default. You can adjust `cell_size` or other constants in `ConnectFour` to change appearance.
-- The main menu uses a background image from `assets/bg.jpeg` if present; otherwise, a solid background is shown.
