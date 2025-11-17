@@ -31,19 +31,18 @@ python -m pip install -r requirements.txt
 ```
 
 ## Run
-'''
 Start a server:
-python .\server.py
-'''
-Start from the main menu (recommended):
-
-```powershell
-python .\main.py ( 1  player )
 ```
-To have the second player does the same thing.
+python .\server.py
+```
+Start from the main menu (recommended):
+Each player:
+```powershell
+python .\main.py
+```
+The second player does the same thing.
 One of the player will host room and the second one would type in the room's code to join.
-When both players are ready the game will start
-
+When both players are ready the game will start.
 
 
 ## Controls
